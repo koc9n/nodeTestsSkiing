@@ -20,31 +20,36 @@ module.exports.findMyWay = async (map) => {
     return preparedMap;
 };
 
+function isApex(currentPoint) {
+    return currentPoint.heightsAround.northHeight <= currentPoint.height
+        && currentPoint.heightsAround.southHeight <= currentPoint.height
+        && currentPoint.heightsAround.westHeight <= currentPoint.height
+        && currentPoint.heightsAround.eastHeight <= currentPoint.height;
+}
+
+function isBottom(currentPoint) {
+    return currentPoint.heightsAround.northHeight >= currentPoint.height
+        && currentPoint.heightsAround.southHeight >= currentPoint.height
+        && currentPoint.heightsAround.westHeight >= currentPoint.height
+        && currentPoint.heightsAround.eastHeight >= currentPoint.height;
+}
+
 function getWays(map, prepMap, ns, we) {
-    let currentHeight = prepMap[ns][we] || {};
-    currentHeight.ways = [];
-    let northHeight = prepMap[ns - 1] ? prepMap[ns - 1][we] : undefined;
-    let southHeight = prepMap[ns + 1] ? prepMap[ns + 1][we] : undefined;
-    let westHeight = prepMap[ns][we - 1];
-    let eastHeight = prepMap[ns][we + 1];
+    let currentPoint = prepMap[ns][we] || {};
+    currentPoint.height = map[ns][we];
+    currentPoint.heightsAround = {};
+    currentPoint.heightsAround.northHeight = map[ns - 1][we];
+    currentPoint.heightsAround.southHeight = map[ns + 1][we];
+    currentPoint.heightsAround.westHeight = map[ns][we - 1];
+    currentPoint.heightsAround.eastHeight = map[ns][we + 1];
+    currentPoint.isApex = isApex(currentPoint);
+    currentPoint.isBottom = isBottom(currentPoint);
 
-    if (northHeight <= currentHeight
-        && southHeight <= currentHeight
-        && westHeight <= currentHeight
-        && eastHeight <= currentHeight) {
-        currentHeight.isApex = true;
-    }
-    if (northHeight >= currentHeight
-        && southHeight >= currentHeight
-        && westHeight >= currentHeight
-        && eastHeight >= currentHeight) {
-        currentHeight.isBottom = true;
-    }
-
-    if (northHeight < currentHeight) currentHeight.ways.push(northHeight);
-    if (southHeight < currentHeight) currentHeight.ways.push(southHeight);
-    if (westHeight < currentHeight) currentHeight.ways.push(westHeight);
-    if (northHeight < currentHeight) currentHeight.ways.push(northHeight);
+    currentPoint.ways = [];
+    if (currentPoint.heightsAround.northHeight < currentPoint.height) currentPoint.ways.push(northHeight);
+    if (currentPoint.heightsAround.southHeight < currentPoint.height) currentPoint.ways.push(southHeight);
+    if (currentPoint.heightsAround.westHeight < currentPoint.height) currentPoint.ways.push(westHeight);
+    if (currentPoint.heightsAround.northHeight < currentPoint.height) currentPoint.ways.push(northHeight);
 
 
 }

@@ -1,3 +1,5 @@
+> In current algorithm I suppose that we cannot move to neighbor points if its height is equal to current point height.
+
 To run app:
  1. be sure node v8+ is installed
  2. run command in terminal under current folder

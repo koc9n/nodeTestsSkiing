@@ -5,51 +5,61 @@
  *
  * @return Object that contains fields: longest, steepest (each field is array of values from input map)
  */
+const {PathDownTree} = require('./PathDownTree');
+const {MapPoint} = require('./MapPoint');
+let preparedMap = [];
+let apexList = [];
 
-module.exports.findMyWay = async (map) => {
-
-    let preparedMap = [];
+function prepareData(map) {
     for (let ns = 0; ns < map.length; ns++) {
         preparedMap.push([]);
         for (let we = 0; we < map.length; we++) {
-            getWays(map, preparedMap, ns, we);
+            preparedMap[ns][we] = new MapPoint(map, {ns, we});
+            if (preparedMap[ns][we].isApex) {
+                apexList.push(new PathDownTree(preparedMap[ns][we]));
+            }
         }
     }
 
-    // return final result
-    return preparedMap;
+}
+
+function addChildToMapPoint(pointAround, pathPoint) {
+    if (pointAround) {
+        let mapPointAround = preparedMap[pointAround.ns][pointAround.we];
+        let childPathPoint = pathPoint.addChild(mapPointAround);
+        if (childPathPoint) {
+            mapPointAround.heightsAround.forEach((childPointAround) => {
+                addChildToMapPoint(childPointAround, childPathPoint);
+            });
+        }
+    }
+}
+
+exports.findMyWay = async (map) => {
+    prepareData(map);
+    apexList.forEach((pathPoint) => {
+        pathPoint.mapPoint.heightsAround.forEach((pointAround) => {
+            addChildToMapPoint(pointAround, pathPoint);
+        });
+    });
+
+    // find longest from possible longest paths down
+    let longestPath = null;
+    apexList.forEach((apexPoint) => {
+        let longestPathByCurrentApex = apexPoint.getPath();
+        if (!longestPath) {
+            longestPath = longestPathByCurrentApex;
+        } else {
+            if (longestPath.steps < longestPathByCurrentApex.steps) {
+                longestPath = longestPathByCurrentApex;
+            } else if (longestPath.steps === longestPathByCurrentApex.steps) {
+                if (longestPath.heightDifference < longestPathByCurrentApex.heightDifference) {
+                    longestPath = longestPathByCurrentApex;
+                }
+            }
+        }
+
+    });
+
+    return longestPath;
 };
-
-function isApex(currentPoint) {
-    return currentPoint.heightsAround.northHeight <= currentPoint.height
-        && currentPoint.heightsAround.southHeight <= currentPoint.height
-        && currentPoint.heightsAround.westHeight <= currentPoint.height
-        && currentPoint.heightsAround.eastHeight <= currentPoint.height;
-}
-
-function isBottom(currentPoint) {
-    return currentPoint.heightsAround.northHeight >= currentPoint.height
-        && currentPoint.heightsAround.southHeight >= currentPoint.height
-        && currentPoint.heightsAround.westHeight >= currentPoint.height
-        && currentPoint.heightsAround.eastHeight >= currentPoint.height;
-}
-
-function getWays(map, prepMap, ns, we) {
-    let currentPoint = prepMap[ns][we] || {};
-    currentPoint.height = map[ns][we];
-    currentPoint.heightsAround = {};
-    currentPoint.heightsAround.northHeight = map[ns - 1][we];
-    currentPoint.heightsAround.southHeight = map[ns + 1][we];
-    currentPoint.heightsAround.westHeight = map[ns][we - 1];
-    currentPoint.heightsAround.eastHeight = map[ns][we + 1];
-    currentPoint.isApex = isApex(currentPoint);
-    currentPoint.isBottom = isBottom(currentPoint);
-
-    currentPoint.ways = [];
-    if (currentPoint.heightsAround.northHeight < currentPoint.height) currentPoint.ways.push(northHeight);
-    if (currentPoint.heightsAround.southHeight < currentPoint.height) currentPoint.ways.push(southHeight);
-    if (currentPoint.heightsAround.westHeight < currentPoint.height) currentPoint.ways.push(westHeight);
-    if (currentPoint.heightsAround.northHeight < currentPoint.height) currentPoint.ways.push(northHeight);
-
-
-}
